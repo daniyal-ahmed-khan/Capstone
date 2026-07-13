@@ -1,0 +1,5 @@
+ABLATION STUDY — Preprocessing vs No Preprocessing
+=======================================================
+With Preprocessing    — Accuracy: 84.00%
+Without Preprocessing — Accuracy: 83.86%
+Improvement: 0.14%
