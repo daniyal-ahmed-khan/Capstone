@@ -1,0 +1,12 @@
+DenseNet-121 WITHOUT OpenCV Preprocessing
+==========================================
+
+              precision    recall  f1-score   support
+
+  No Finding       0.88      0.94      0.90      8826
+Infiltration       0.33      0.20      0.25      1417
+   Pneumonia       0.96      0.93      0.94       688
+
+    accuracy                           0.84     10931
+   macro avg       0.72      0.69      0.70     10931
+weighted avg       0.81      0.84      0.82     10931
