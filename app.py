@@ -168,6 +168,15 @@ if uploaded_file is not None:
     st.markdown("---")
     st.subheader("Prediction Results")
 
+    # ── Out-of-distribution warning ───────────────────────────────────────
+    if confidence < 0.60:
+        st.warning("""
+        ⚠️ **Low Confidence Prediction** — The model is not confident about this X-ray.
+        This may indicate the image shows findings outside the model's three training 
+        categories (No Finding, Infiltration, Pneumonia), or the image quality may be 
+        insufficient. Please consult a qualified radiologist.
+        """)
+
     col1, col2 = st.columns(2)
 
     with col1:
@@ -197,6 +206,7 @@ if uploaded_file is not None:
     st.info("""
     ⚠️ **Disclaimer:** This model is a research prototype trained on the NIH Chest X-Ray14 
     dataset. It should not be used for clinical diagnosis. Always consult a qualified 
-    radiologist for medical decisions.
+    radiologist for medical decisions. The model is only trained on 3 conditions — 
+    other diseases will not be correctly identified.
     """)
-    st.caption("Model: DenseNet-121 | NIH Chest X-Ray14 + Kaggle Pneumonia | CIS-627 Capstone")s
+    st.caption("Model: DenseNet-121 | NIH Chest X-Ray14 + Kaggle Pneumonia | CIS-627 Capstone")
