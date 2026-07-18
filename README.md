@@ -1,22 +1,38 @@
 # Chest X-Ray Disease Classification
 ## OpenCV + Deep Learning Pipeline with Fairness Analysis
 
-### Project Overview
-An end-to-end computer vision pipeline for early detection of Pneumonia and Infiltration from chest X-rays using the NIH Chest X-Ray14 dataset.
+**CIS-627 Capstone | Daniyal Ahmed Khan | St. Thomas University**
 
-### Classes
-| Label | Count |
-|---|---|
-| No Finding | 60,361 |
-| Infiltration | 19,894 |
-| Pneumonia | 1,431 |
+## 🚀 Live Demo
+👉 **[Try the app here](https://capstone-chestxray.streamlit.app)**
 
-### Tech Stack
-- OpenCV, PyTorch, ResNet-50, EfficientNet-B3, Grad-CAM, Streamlit
+## Project Overview
+A deep learning pipeline for chest X-ray disease classification using:
+- **Model:** DenseNet-121 pretrained on ImageNet
+- **Dataset:** NIH Chest X-Ray14 + Kaggle Pneumonia (74,503 images)
+- **Classes:** No Finding, Infiltration, Pneumonia
+- **Overall Accuracy:** 84%
+- **Pneumonia F1:** 0.96
 
-### Repository Structure
-- `notebooks/` — EDA, training, and fairness analysis notebooks
-- `src/` — Python scripts for preprocessing and modeling
-- `models/` — Saved model weights
-- `results/` — Metrics, plots, Grad-CAM visualizations
-- `dashboard/` — Streamlit app
+## Results
+| Class | Precision | Recall | F1 |
+|---|---|---|---|
+| No Finding | 0.88 | 0.93 | 0.90 |
+| Infiltration | 0.34 | 0.23 | 0.28 |
+| Pneumonia | 0.99 | 0.92 | 0.96 |
+
+## Fairness Analysis
+- **Gender gap:** 2.07% (Female 84.11% vs Male 82.03%)
+- **Age gap:** 6.77% (41-60 best at 84.19%, 0-20 worst at 77.42%)
+
+## Weekly Progress
+- **Week 1:** Dataset setup, Kaggle download
+- **Week 2:** EDA
+- **Week 3:** OpenCV preprocessing (CLAHE + Gaussian blur)
+- **Week 4:** Augmentation, patient-level splits, class imbalance
+- **Week 5:** DenseNet-121 training, CheXNet comparison, SMOTE
+- **Week 6:** Fairness analysis by gender and age
+- **Week 7:** Streamlit web app deployment
+
+## Tech Stack
+PyTorch, DenseNet-121, OpenCV, Albumentations, Streamlit
