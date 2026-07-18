@@ -22,16 +22,17 @@ IMAGENET_STD  = (0.229, 0.224, 0.225)
 MODEL_PATH = 'densenet121_best_checkpoint.pth'
 GDRIVE_FILE_ID = '1m0mSgU98VuVEbPO0SiTeROUI2OoEUs0A'
 
-# ── Load model ────────────────────────────────────────────────────────────
-@st.cache_resource
-def load_model():
-    if not os.path.exists(MODEL_PATH):
-        st.info("Downloading model weights... please wait")
+# ── Download model at startup ─────────────────────────────────────────────
+if not os.path.exists(MODEL_PATH):
+    with st.spinner("Downloading model weights — please wait..."):
         gdown.download(
             f'https://drive.google.com/uc?id={GDRIVE_FILE_ID}',
             MODEL_PATH, quiet=False
         )
 
+# ── Load model ────────────────────────────────────────────────────────────
+@st.cache_resource
+def load_model():
     model = models.densenet121(weights=None)
     in_features = model.classifier.in_features
     model.classifier = nn.Sequential(
@@ -65,7 +66,9 @@ def preprocess_image(image):
     mean = np.array(IMAGENET_MEAN)
     std  = np.array(IMAGENET_STD)
     img_normalized = (img_float - mean) / std
-    tensor = torch.from_numpy(img_normalized.transpose(2, 0, 1)).float().unsqueeze(0)
+    tensor = torch.from_numpy(
+        img_normalized.transpose(2, 0, 1)
+    ).float().unsqueeze(0)
 
     return tensor, img_clahe, img_denoised, img_resized
 
@@ -110,7 +113,14 @@ with st.sidebar:
     **Primary:** NIH Chest X-Ray14  
     **Supplementary:** Kaggle Pneumonia Dataset  
     **Classes:** No Finding, Infiltration, Pneumonia  
-    **Split:** Patient-level 70/15/15
+    **Split:** Patient-level 70/15/15  
+    **GitHub:** [daniyal-ahmed-khan/Capstone](https://github.com/daniyal-ahmed-khan/Capstone)
+    """)
+
+    st.header("Fairness Analysis")
+    st.markdown("""
+    **Gender gap:** 2.07% (Female > Male)  
+    **Age gap:** 6.77% (41-60 best, 0-20 worst)
     """)
 
 # ── Upload ────────────────────────────────────────────────────────────────
@@ -133,7 +143,6 @@ if uploaded_file is not None:
     with st.spinner("Preprocessing image..."):
         tensor, img_clahe, img_denoised, img_resized = preprocess_image(image)
 
-    # Show preprocessing steps
     with col2:
         st.subheader("After CLAHE Enhancement")
         st.image(img_clahe, use_container_width=True, clamp=True)
@@ -163,13 +172,20 @@ if uploaded_file is not None:
 
     with col1:
         if CLASSES[predicted_class] == 'Pneumonia':
-            st.error(f"🔴 **{CLASSES[predicted_class]}**")
+            st.error(f"🔴 **Predicted: {CLASSES[predicted_class]}**")
         elif CLASSES[predicted_class] == 'Infiltration':
-            st.warning(f"🟡 **{CLASSES[predicted_class]}**")
+            st.warning(f"🟡 **Predicted: {CLASSES[predicted_class]}**")
         else:
-            st.success(f"🟢 **{CLASSES[predicted_class]}**")
+            st.success(f"🟢 **Predicted: {CLASSES[predicted_class]}**")
 
         st.metric("Confidence", f"{confidence:.1%}")
+
+        st.markdown("""
+        **Class Descriptions:**
+        - 🟢 No Finding — Normal chest X-ray
+        - 🟡 Infiltration — Abnormal substance in lung tissue
+        - 🔴 Pneumonia — Lung infection detected
+        """)
 
     with col2:
         st.subheader("Confidence Scores")
@@ -178,4 +194,9 @@ if uploaded_file is not None:
             st.progress(prob, text=f"{cls}: {prob:.1%}")
 
     st.markdown("---")
-    st.caption("Model: DenseNet-121 | Trained on NIH Chest X-Ray14 + Kaggle Pneumonia Dataset")
+    st.info("""
+    ⚠️ **Disclaimer:** This model is a research prototype trained on the NIH Chest X-Ray14 
+    dataset. It should not be used for clinical diagnosis. Always consult a qualified 
+    radiologist for medical decisions.
+    """)
+    st.caption("Model: DenseNet-121 | NIH Chest X-Ray14 + Kaggle Pneumonia | CIS-627 Capstone")s
