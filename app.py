@@ -133,30 +133,15 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert('RGB')
 
+    # Always show original image
     col1, col2 = st.columns(2)
-
     with col1:
         st.subheader("Original Image")
         st.image(image, use_container_width=True)
 
-    # Preprocess
-    with st.spinner("Preprocessing image..."):
+    # Preprocess and predict first
+    with st.spinner("Analyzing image..."):
         tensor, img_clahe, img_denoised, img_resized = preprocess_image(image)
-
-    with col2:
-        st.subheader("After CLAHE Enhancement")
-        st.image(img_clahe, use_container_width=True, clamp=True)
-
-    # Show preprocessing pipeline
-    st.subheader("OpenCV Preprocessing Pipeline")
-    cols = st.columns(4)
-    cols[0].image(np.array(image.convert('L')), caption="1. Original", clamp=True)
-    cols[1].image(img_clahe, caption="2. After CLAHE", clamp=True)
-    cols[2].image(img_denoised, caption="3. After Denoising", clamp=True)
-    cols[3].image(img_resized, caption="4. Final (224×224)", clamp=True)
-
-    # Predict
-    with st.spinner("Running prediction..."):
         model = load_model()
         with torch.no_grad():
             outputs = model(tensor)
@@ -164,49 +149,69 @@ if uploaded_file is not None:
             predicted_class = probs.argmax().item()
             confidence = probs[predicted_class].item()
 
-    # Results
-    st.markdown("---")
-    st.subheader("Prediction Results")
-
-    # ── Out-of-distribution warning ───────────────────────────────────────
+    # ── Invalid image — low confidence ────────────────────────────────────
     if confidence < 0.60:
-        st.warning("""
-        ⚠️ **Low Confidence Prediction** — The model is not confident about this X-ray.
-        This may indicate the image shows findings outside the model's three training 
-        categories (No Finding, Infiltration, Pneumonia), or the image quality may be 
-        insufficient. Please consult a qualified radiologist.
+        with col2:
+            st.subheader("Analysis Result")
+            st.error("""
+            ❌ **This does not appear to be a valid chest X-ray.**
+
+            The model could not confidently classify this image. This may be because:
+            - The uploaded image is not a chest X-ray
+            - The image quality is too low
+            - The X-ray shows findings outside the model's training categories
+
+            Please upload a proper chest X-ray image and consult a qualified radiologist.
+            """)
+
+    # ── Valid image — show full results ───────────────────────────────────
+    else:
+        with col2:
+            st.subheader("After CLAHE Enhancement")
+            st.image(img_clahe, use_container_width=True, clamp=True)
+
+        # Show preprocessing pipeline
+        st.subheader("OpenCV Preprocessing Pipeline")
+        cols = st.columns(4)
+        cols[0].image(np.array(image.convert('L')), caption="1. Original", clamp=True)
+        cols[1].image(img_clahe, caption="2. After CLAHE", clamp=True)
+        cols[2].image(img_denoised, caption="3. After Denoising", clamp=True)
+        cols[3].image(img_resized, caption="4. Final (224×224)", clamp=True)
+
+        # Show prediction results
+        st.markdown("---")
+        st.subheader("Prediction Results")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if CLASSES[predicted_class] == 'Pneumonia':
+                st.error(f"🔴 **Predicted: {CLASSES[predicted_class]}**")
+            elif CLASSES[predicted_class] == 'Infiltration':
+                st.warning(f"🟡 **Predicted: {CLASSES[predicted_class]}**")
+            else:
+                st.success(f"🟢 **Predicted: {CLASSES[predicted_class]}**")
+
+            st.metric("Confidence", f"{confidence:.1%}")
+
+            st.markdown("""
+            **Class Descriptions:**
+            - 🟢 No Finding — Normal chest X-ray
+            - 🟡 Infiltration — Abnormal substance in lung tissue
+            - 🔴 Pneumonia — Lung infection detected
+            """)
+
+        with col2:
+            st.subheader("Confidence Scores")
+            for i, cls in enumerate(CLASSES):
+                prob = probs[i].item()
+                st.progress(prob, text=f"{cls}: {prob:.1%}")
+
+        st.markdown("---")
+        st.info("""
+        ⚠️ **Disclaimer:** This model is a research prototype trained on the NIH Chest 
+        X-Ray14 dataset. It should not be used for clinical diagnosis. Always consult 
+        a qualified radiologist for medical decisions. The model is only trained on 
+        3 conditions — other diseases will not be correctly identified.
         """)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if CLASSES[predicted_class] == 'Pneumonia':
-            st.error(f"🔴 **Predicted: {CLASSES[predicted_class]}**")
-        elif CLASSES[predicted_class] == 'Infiltration':
-            st.warning(f"🟡 **Predicted: {CLASSES[predicted_class]}**")
-        else:
-            st.success(f"🟢 **Predicted: {CLASSES[predicted_class]}**")
-
-        st.metric("Confidence", f"{confidence:.1%}")
-
-        st.markdown("""
-        **Class Descriptions:**
-        - 🟢 No Finding — Normal chest X-ray
-        - 🟡 Infiltration — Abnormal substance in lung tissue
-        - 🔴 Pneumonia — Lung infection detected
-        """)
-
-    with col2:
-        st.subheader("Confidence Scores")
-        for i, cls in enumerate(CLASSES):
-            prob = probs[i].item()
-            st.progress(prob, text=f"{cls}: {prob:.1%}")
-
-    st.markdown("---")
-    st.info("""
-    ⚠️ **Disclaimer:** This model is a research prototype trained on the NIH Chest X-Ray14 
-    dataset. It should not be used for clinical diagnosis. Always consult a qualified 
-    radiologist for medical decisions. The model is only trained on 3 conditions — 
-    other diseases will not be correctly identified.
-    """)
-    st.caption("Model: DenseNet-121 | NIH Chest X-Ray14 + Kaggle Pneumonia | CIS-627 Capstone")
+        st.caption("Model: DenseNet-121 | NIH Chest X-Ray14 + Kaggle Pneumonia | CIS-627 Capstone")
